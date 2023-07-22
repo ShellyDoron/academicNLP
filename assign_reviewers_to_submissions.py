@@ -57,9 +57,9 @@ for submission, assigned_reviewers in assignments.items():
             assigned_reviewers_len[reviewer] = 0
         assigned_reviewers_len[reviewer] += 1
 
-with open('./assignments_new.json', 'w') as assignments_file:
+with open('./assignments.json', 'w') as assignments_file:
     assignments_file.write(json.dumps(assignments))
 
 
-with open('./number_of_assignments_to_reviewer_new.json', 'w') as num_assignments_file:
+with open('./number_of_assignments_to_reviewer.json', 'w') as num_assignments_file:
     num_assignments_file.write(json.dumps(assigned_reviewers_len))
