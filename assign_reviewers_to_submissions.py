@@ -8,6 +8,8 @@ def assign_reviewers(submissions, reviewers, score_matrix):
     assert len(submissions) == score_matrix.shape[0]
     assert len(reviewers) == score_matrix.shape[1]
 
+    negative_score_matrix = -score_matrix
+
     assignments = {}
     # Calculate the number of times each reviewer needs to be cloned.
     # This is twice the number of submissions divided by the number of reviewers, rounded up.
@@ -15,7 +17,7 @@ def assign_reviewers(submissions, reviewers, score_matrix):
         1])  # equivalent to ceil(2*n_submissions/n_reviewers)
 
     # Clone the reviewers to create a new cost matrix
-    cost_matrix = np.repeat(score_matrix, num_clones, axis=1)
+    cost_matrix = np.repeat(negative_score_matrix, num_clones, axis=1)
 
     # Get the first and second optimal assignments using linear_sum_assignment
     row_ind1, col_ind1 = linear_sum_assignment(cost_matrix)
@@ -24,7 +26,8 @@ def assign_reviewers(submissions, reviewers, score_matrix):
     row_ind2, col_ind2 = linear_sum_assignment(cost_matrix)
 
     for r1, c1, r2, c2 in zip(row_ind1, col_ind1, row_ind2, col_ind2):
-        assignments[submissions[r1]] = [reviewers[c1 % score_matrix.shape[1]], reviewers[c2 % score_matrix.shape[1]]]
+        assignments[submissions[r1]] = [reviewers[c1 % negative_score_matrix.shape[1]],
+                                        reviewers[c2 % negative_score_matrix.shape[1]]]
 
     return assignments
 
@@ -32,7 +35,7 @@ def assign_reviewers(submissions, reviewers, score_matrix):
 score_matrix = None
 array = []
 
-with open('./result.json', 'r') as result:
+with open('./score_matrix.json', 'r') as result:
     result_json = json.loads(result.read())
     submissions = list(result_json.keys())
     reviewers = list(result_json[submissions[0]].keys())
@@ -54,9 +57,9 @@ for submission, assigned_reviewers in assignments.items():
             assigned_reviewers_len[reviewer] = 0
         assigned_reviewers_len[reviewer] += 1
 
-with open('./assignments.json', 'w') as assignments_file:
+with open('./assignments_new.json', 'w') as assignments_file:
     assignments_file.write(json.dumps(assignments))
 
 
-with open('./number_of_assignments_to_reviewer.json', 'w') as num_assignments_file:
+with open('./number_of_assignments_to_reviewer_new.json', 'w') as num_assignments_file:
     num_assignments_file.write(json.dumps(assigned_reviewers_len))
