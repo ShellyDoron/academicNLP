@@ -1,4 +1,5 @@
 import json
+import csv
 
 from scipy.optimize import linear_sum_assignment
 import numpy as np
@@ -63,3 +64,14 @@ with open('./assignments.json', 'w') as assignments_file:
 
 with open('./number_of_assignments_to_reviewer.json', 'w') as num_assignments_file:
     num_assignments_file.write(json.dumps(assigned_reviewers_len))
+
+# Prepare data for CSV
+csv_data = []
+for key, values in assignments.items():
+    csv_data.append([key] + values)
+
+# Write data to CSV
+with open('assignments.csv', 'w', newline='') as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(["Paper Name", "Reviewer #1", "Reviewer #2"])  # Write header
+    writer.writerows(csv_data)  # Write data
