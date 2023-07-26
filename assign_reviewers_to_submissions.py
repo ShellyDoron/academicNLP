@@ -1,40 +1,57 @@
 import json
 import csv
 
-from scipy.optimize import linear_sum_assignment
-import numpy as np
+from ortools.linear_solver import pywraplp
 
 
 def assign_reviewers(submissions, reviewers, score_matrix):
-    assert len(submissions) == score_matrix.shape[0]
-    assert len(reviewers) == score_matrix.shape[1]
 
-    negative_score_matrix = -score_matrix
+    solver = pywraplp.Solver.CreateSolver('CBC')
 
+    num_reviewers = len(reviewers)
+    num_submissions = len(submissions)
+
+    # Variables
+    x = {}
+    for i in range(num_reviewers):
+        for j in range(num_submissions):
+            x[i, j] = solver.IntVar(0, 1, '')
+
+    # Constraints for each worker
+    for i in range(num_reviewers):
+        solver.Add(solver.Sum([x[i, j] for j in range(num_submissions)]) <= 7)
+        solver.Add(solver.Sum([x[i, j] for j in range(num_submissions)]) >= 2)
+
+    # Constraints for each task
+    for j in range(num_submissions):
+        solver.Add(solver.Sum([x[i, j] for i in range(num_reviewers)]) == 2)
+
+    # Objective
+    objective_terms = []
+    for i in range(num_reviewers):
+        for j in range(num_submissions):
+            objective_terms.append(score_matrix[j][i] * x[i, j])
+    solver.Minimize(solver.Sum(objective_terms))
+
+    # Solve the system.
+    status = solver.Solve()
     assignments = {}
-    # Calculate the number of times each reviewer needs to be cloned.
-    # This is twice the number of submissions divided by the number of reviewers, rounded up.
-    num_clones = -(-2 * score_matrix.shape[0] // score_matrix.shape[
-        1])  # equivalent to ceil(2*n_submissions/n_reviewers)
 
-    # Clone the reviewers to create a new cost matrix
-    cost_matrix = np.repeat(negative_score_matrix, num_clones, axis=1)
-
-    # Get the first and second optimal assignments using linear_sum_assignment
-    row_ind1, col_ind1 = linear_sum_assignment(cost_matrix)
-    for r, c in zip(row_ind1, col_ind1):
-        cost_matrix[r, c] = np.inf
-    row_ind2, col_ind2 = linear_sum_assignment(cost_matrix)
-
-    for r1, c1, r2, c2 in zip(row_ind1, col_ind1, row_ind2, col_ind2):
-        assignments[submissions[r1]] = [reviewers[c1 % negative_score_matrix.shape[1]],
-                                        reviewers[c2 % negative_score_matrix.shape[1]]]
-
+    if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+        print('Total cost = ', solver.Objective().Value(), '\n')
+        for i in range(num_reviewers):
+            for j in range(num_submissions):
+                # Test if x[i,j] is 1 (with tolerance for floating point arithmetic).
+                if submissions[j] not in assignments:
+                    assignments[submissions[j]] = []
+                if x[i, j].solution_value() > 0.5:
+                    assignments[submissions[j]].append(reviewers[i])
+                    print('Worker %d assigned to task %d.  Cost = %f' %
+                          (i, j, score_matrix[j][i]))
     return assignments
 
 
-score_matrix = None
-array = []
+score_matrix = []
 
 with open('./score_matrix.json', 'r') as result:
     result_json = json.loads(result.read())
@@ -42,15 +59,16 @@ with open('./score_matrix.json', 'r') as result:
     reviewers = list(result_json[submissions[0]].keys())
     i = 0
     for submission in submissions:
-        array.append([])
+        score_matrix.append([])
         for reviewer_score in result_json[submission].values():
-            array[i].append(reviewer_score)
+            score_matrix[i].append(-reviewer_score)
         i += 1
-score_matrix = np.array(array)
 
 assignments = assign_reviewers(submissions, reviewers, score_matrix)
 
+
 assigned_reviewers_len = {}
+
 for submission, assigned_reviewers in assignments.items():
     print(f"{submission} is assigned to {', '.join(assigned_reviewers)}")
     for reviewer in assigned_reviewers:

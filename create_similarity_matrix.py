@@ -31,14 +31,12 @@ reviewers_articles = {}
 
 for dirpath, dirnames, filenames in os.walk("./submissions"):
     for submission in filenames:
-        print(submission)
         sub_text = extract_sections(f'{dirpath}/{submission}')
         sub = nlp(sub_text)
         submissions[submission] = sub
 
 for dirpath, dirnames, filenames in os.walk("./reviewers"):
     for reviewer in dirnames:
-        print(reviewer)
         reviewers_articles[reviewer] = {}
         for dirpath_to_reviewer, _, articles in os.walk(f"./reviewers/{reviewer}"):
             for article in articles:
@@ -48,16 +46,18 @@ for dirpath, dirnames, filenames in os.walk("./reviewers"):
                     reviewers_articles[reviewer][article] = pdf
                 except Exception:
                     pass
-print(reviewers_articles)
+
+
 for submission in submissions:
     print(submission)
     score[submission] = {}
     for reviewer in reviewers_articles:
-        number_of_articles = len(reviewers_articles[reviewer])
-        sum_similarity_score = 0
+        max_score = 0
         for article in reviewers_articles[reviewer]:
-            sum_similarity_score += submissions[submission].similarity(reviewers_articles[reviewer][article])
-        score[submission][reviewer] = sum_similarity_score / number_of_articles
+            current_score = submissions[submission].similarity(reviewers_articles[reviewer][article])
+            if max_score < current_score:
+                max_score = current_score
+        score[submission][reviewer] = max_score
 
-with open('./result.json', 'w') as result:
+with open('./score_matrix.json', 'w') as result:
     result.write(json.dumps(score))
