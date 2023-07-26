@@ -29,7 +29,7 @@ a NLP project for similarity of academic researches
    1. if you want to change this please change it in lines 22,23,27
    2. the number 7 is calculated to 192 submissions and 58 reviewers
       1. 192*2 / 58 = 6.6 so we selected 7
-3. run the command `python assign_reviewers_to_submissions.py`
+3. run the command `python ./assign_reviewers_to_submissions.py`
 4. you should see some printings that indicates that the code works
 5. now you have 3 new files:
    1. `assignments.json` with the assignments in a json format
