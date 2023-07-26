@@ -38,7 +38,6 @@ def assign_reviewers(submissions, reviewers, score_matrix):
     assignments = {}
 
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-        print('Total cost = ', solver.Objective().Value(), '\n')
         for i in range(num_reviewers):
             for j in range(num_submissions):
                 # Test if x[i,j] is 1 (with tolerance for floating point arithmetic).
@@ -46,8 +45,6 @@ def assign_reviewers(submissions, reviewers, score_matrix):
                     assignments[submissions[j]] = []
                 if x[i, j].solution_value() > 0.5:
                     assignments[submissions[j]].append(reviewers[i])
-                    print('Worker %d assigned to task %d.  Cost = %f' %
-                          (i, j, score_matrix[j][i]))
     return assignments
 
 
